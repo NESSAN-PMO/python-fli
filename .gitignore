@@ -18,7 +18,7 @@ tags
 
 # Compiled source #
 ###################
-*.a
+#*.a
 *.com
 *.class
 *.dll
