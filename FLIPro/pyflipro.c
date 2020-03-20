@@ -975,6 +975,16 @@ static void __pyx_insert_code_object(int code_line, PyCodeObject* code_object);
 static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename);
 
+/* Print.proto */
+static int __Pyx_Print(PyObject*, PyObject *, int);
+#if CYTHON_COMPILING_IN_PYPY || PY_MAJOR_VERSION >= 3
+static PyObject* __pyx_print = 0;
+static PyObject* __pyx_print_kwargs = 0;
+#endif
+
+/* CIntToPy.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int32_t(int32_t value);
+
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_wchar_t(wchar_t value);
 
@@ -988,6 +998,9 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_uint32_t(uint32_t value);
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_FPROUSBSPEED(FPROUSBSPEED value);
 
 static PyObject* __pyx_convert__to_py_struct__device_info_t(struct device_info_t s);
+/* PrintOne.proto */
+static int __Pyx_PrintOne(PyObject* stream, PyObject *o);
+
 /* CIntFromPy.proto */
 static CYTHON_INLINE size_t __Pyx_PyInt_As_size_t(PyObject *);
 
@@ -1041,12 +1054,19 @@ int __pyx_module_is_main_FLIPro__pyflipro = 0;
 static PyObject *__pyx_builtin_range;
 static const char __pyx_k_os[] = "os";
 static const char __pyx_k_all[] = "__all__";
+static const char __pyx_k_end[] = "end";
 static const char __pyx_k_sys[] = "sys";
+static const char __pyx_k_file[] = "file";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_name[] = "__name__";
 static const char __pyx_k_test[] = "__test__";
+static const char __pyx_k_hello[] = "hello";
+static const char __pyx_k_print[] = "print";
 static const char __pyx_k_range[] = "range";
+static const char __pyx_k_Length[] = "Length";
 static const char __pyx_k_import[] = "__import__";
+static const char __pyx_k_status[] = "status";
+static const char __pyx_k_Version[] = "Version";
 static const char __pyx_k_uiProdId[] = "uiProdId";
 static const char __pyx_k_warnings[] = "warnings";
 static const char __pyx_k_cSerialNo[] = "cSerialNo";
@@ -1056,6 +1076,7 @@ static const char __pyx_k_DeviceInfo[] = "DeviceInfo";
 static const char __pyx_k_NumDevices[] = "NumDevices";
 static const char __pyx_k_uiVendorId[] = "uiVendorId";
 static const char __pyx_k_cDevicePath[] = "cDevicePath";
+static const char __pyx_k_GetAPIVersion[] = "GetAPIVersion";
 static const char __pyx_k_GetCameraList[] = "GetCameraList";
 static const char __pyx_k_cFriendlyName[] = "cFriendlyName";
 static const char __pyx_k_FLIPro_pyflipro[] = "FLIPro.pyflipro";
@@ -1064,8 +1085,11 @@ static const char __pyx_k_FLIPro_pyflipro_pyx[] = "FLIPro\\pyflipro.pyx";
 static PyObject *__pyx_n_s_DeviceInfo;
 static PyObject *__pyx_n_s_FLIPro_pyflipro;
 static PyObject *__pyx_kp_s_FLIPro_pyflipro_pyx;
+static PyObject *__pyx_n_s_GetAPIVersion;
 static PyObject *__pyx_n_s_GetCameraList;
+static PyObject *__pyx_n_s_Length;
 static PyObject *__pyx_n_s_NumDevices;
+static PyObject *__pyx_n_s_Version;
 static PyObject *__pyx_n_s_all;
 static PyObject *__pyx_n_s_cDevicePath;
 static PyObject *__pyx_n_s_cFriendlyName;
@@ -1073,22 +1097,30 @@ static PyObject *__pyx_n_s_cSerialNo;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_eConnType;
 static PyObject *__pyx_n_s_eUSBSpeed;
+static PyObject *__pyx_n_s_end;
+static PyObject *__pyx_n_s_file;
+static PyObject *__pyx_n_s_hello;
 static PyObject *__pyx_n_s_import;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_n_s_os;
+static PyObject *__pyx_n_s_print;
 static PyObject *__pyx_n_s_range;
+static PyObject *__pyx_n_s_status;
 static PyObject *__pyx_n_s_sys;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_uiProdId;
 static PyObject *__pyx_n_s_uiVendorId;
 static PyObject *__pyx_n_s_warnings;
 static PyObject *__pyx_pf_6FLIPro_8pyflipro_GetCameraList(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_6FLIPro_8pyflipro_2GetAPIVersion(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
 static PyObject *__pyx_tuple_;
+static PyObject *__pyx_tuple__3;
 static PyObject *__pyx_codeobj__2;
+static PyObject *__pyx_codeobj__4;
 /* Late includes */
 
-/* "FLIPro/pyflipro.pyx":15
+/* "FLIPro/pyflipro.pyx":16
  * __all__ = []
  * 
  * def GetCameraList():             # <<<<<<<<<<<<<<
@@ -1113,6 +1145,7 @@ static PyObject *__pyx_pw_6FLIPro_8pyflipro_1GetCameraList(PyObject *__pyx_self,
 static PyObject *__pyx_pf_6FLIPro_8pyflipro_GetCameraList(CYTHON_UNUSED PyObject *__pyx_self) {
   FPRODEVICEINFO __pyx_v_DeviceInfo;
   uint32_t __pyx_v_NumDevices;
+  int32_t __pyx_v_status;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -1120,25 +1153,49 @@ static PyObject *__pyx_pf_6FLIPro_8pyflipro_GetCameraList(CYTHON_UNUSED PyObject
   PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("GetCameraList", 0);
 
-  /* "FLIPro/pyflipro.pyx":18
+  /* "FLIPro/pyflipro.pyx":19
  *     cdef fli.FPRODEVICEINFO DeviceInfo
  *     cdef uint32_t NumDevices
- *     fli.FPROCam_GetCameraList(&DeviceInfo, &NumDevices)             # <<<<<<<<<<<<<<
+ *     print("hello")             # <<<<<<<<<<<<<<
+ *     cdef int32_t status
+ *     status = fli.FPROCam_GetCameraList(&DeviceInfo, &NumDevices)
+ */
+  if (__Pyx_PrintOne(0, __pyx_n_s_hello) < 0) __PYX_ERR(0, 19, __pyx_L1_error)
+
+  /* "FLIPro/pyflipro.pyx":21
+ *     print("hello")
+ *     cdef int32_t status
+ *     status = fli.FPROCam_GetCameraList(&DeviceInfo, &NumDevices)             # <<<<<<<<<<<<<<
+ *     print(status)
  *     return (DeviceInfo, NumDevices)
  */
-  (void)(FPROCam_GetCameraList((&__pyx_v_DeviceInfo), (&__pyx_v_NumDevices)));
+  __pyx_v_status = FPROCam_GetCameraList((&__pyx_v_DeviceInfo), (&__pyx_v_NumDevices));
 
-  /* "FLIPro/pyflipro.pyx":19
- *     cdef uint32_t NumDevices
- *     fli.FPROCam_GetCameraList(&DeviceInfo, &NumDevices)
+  /* "FLIPro/pyflipro.pyx":22
+ *     cdef int32_t status
+ *     status = fli.FPROCam_GetCameraList(&DeviceInfo, &NumDevices)
+ *     print(status)             # <<<<<<<<<<<<<<
+ *     return (DeviceInfo, NumDevices)
+ * 
+ */
+  __pyx_t_1 = __Pyx_PyInt_From_int32_t(__pyx_v_status); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (__Pyx_PrintOne(0, __pyx_t_1) < 0) __PYX_ERR(0, 22, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "FLIPro/pyflipro.pyx":23
+ *     status = fli.FPROCam_GetCameraList(&DeviceInfo, &NumDevices)
+ *     print(status)
  *     return (DeviceInfo, NumDevices)             # <<<<<<<<<<<<<<
+ * 
+ * def GetAPIVersion():
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_convert__to_py_struct__device_info_t(__pyx_v_DeviceInfo); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_t_1 = __pyx_convert__to_py_struct__device_info_t(__pyx_v_DeviceInfo); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_uint32_t(__pyx_v_NumDevices); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_uint32_t(__pyx_v_NumDevices); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_GIVEREF(__pyx_t_1);
   PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1);
@@ -1150,7 +1207,7 @@ static PyObject *__pyx_pf_6FLIPro_8pyflipro_GetCameraList(CYTHON_UNUSED PyObject
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "FLIPro/pyflipro.pyx":15
+  /* "FLIPro/pyflipro.pyx":16
  * __all__ = []
  * 
  * def GetCameraList():             # <<<<<<<<<<<<<<
@@ -1164,6 +1221,97 @@ static PyObject *__pyx_pf_6FLIPro_8pyflipro_GetCameraList(CYTHON_UNUSED PyObject
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_AddTraceback("FLIPro.pyflipro.GetCameraList", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "FLIPro/pyflipro.pyx":25
+ *     return (DeviceInfo, NumDevices)
+ * 
+ * def GetAPIVersion():             # <<<<<<<<<<<<<<
+ *     cdef wchar_t Version
+ *     cdef uint32_t Length = 30
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_6FLIPro_8pyflipro_3GetAPIVersion(PyObject *__pyx_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static PyMethodDef __pyx_mdef_6FLIPro_8pyflipro_3GetAPIVersion = {"GetAPIVersion", (PyCFunction)__pyx_pw_6FLIPro_8pyflipro_3GetAPIVersion, METH_NOARGS, 0};
+static PyObject *__pyx_pw_6FLIPro_8pyflipro_3GetAPIVersion(PyObject *__pyx_self, CYTHON_UNUSED PyObject *unused) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("GetAPIVersion (wrapper)", 0);
+  __pyx_r = __pyx_pf_6FLIPro_8pyflipro_2GetAPIVersion(__pyx_self);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_6FLIPro_8pyflipro_2GetAPIVersion(CYTHON_UNUSED PyObject *__pyx_self) {
+  wchar_t __pyx_v_Version;
+  uint32_t __pyx_v_Length;
+  int32_t __pyx_v_status;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("GetAPIVersion", 0);
+
+  /* "FLIPro/pyflipro.pyx":27
+ * def GetAPIVersion():
+ *     cdef wchar_t Version
+ *     cdef uint32_t Length = 30             # <<<<<<<<<<<<<<
+ *     cdef int32_t status
+ *     status = fli.FPROCam_GetAPIVersion(&Version, Length)
+ */
+  __pyx_v_Length = 30;
+
+  /* "FLIPro/pyflipro.pyx":29
+ *     cdef uint32_t Length = 30
+ *     cdef int32_t status
+ *     status = fli.FPROCam_GetAPIVersion(&Version, Length)             # <<<<<<<<<<<<<<
+ *     print(status)
+ *     return (Version)
+ */
+  __pyx_v_status = FPROCam_GetAPIVersion((&__pyx_v_Version), __pyx_v_Length);
+
+  /* "FLIPro/pyflipro.pyx":30
+ *     cdef int32_t status
+ *     status = fli.FPROCam_GetAPIVersion(&Version, Length)
+ *     print(status)             # <<<<<<<<<<<<<<
+ *     return (Version)
+ */
+  __pyx_t_1 = __Pyx_PyInt_From_int32_t(__pyx_v_status); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (__Pyx_PrintOne(0, __pyx_t_1) < 0) __PYX_ERR(0, 30, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "FLIPro/pyflipro.pyx":31
+ *     status = fli.FPROCam_GetAPIVersion(&Version, Length)
+ *     print(status)
+ *     return (Version)             # <<<<<<<<<<<<<<
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyInt_From_wchar_t(__pyx_v_Version); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 31, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "FLIPro/pyflipro.pyx":25
+ *     return (DeviceInfo, NumDevices)
+ * 
+ * def GetAPIVersion():             # <<<<<<<<<<<<<<
+ *     cdef wchar_t Version
+ *     cdef uint32_t Length = 30
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("FLIPro.pyflipro.GetAPIVersion", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -1433,8 +1581,11 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_DeviceInfo, __pyx_k_DeviceInfo, sizeof(__pyx_k_DeviceInfo), 0, 0, 1, 1},
   {&__pyx_n_s_FLIPro_pyflipro, __pyx_k_FLIPro_pyflipro, sizeof(__pyx_k_FLIPro_pyflipro), 0, 0, 1, 1},
   {&__pyx_kp_s_FLIPro_pyflipro_pyx, __pyx_k_FLIPro_pyflipro_pyx, sizeof(__pyx_k_FLIPro_pyflipro_pyx), 0, 0, 1, 0},
+  {&__pyx_n_s_GetAPIVersion, __pyx_k_GetAPIVersion, sizeof(__pyx_k_GetAPIVersion), 0, 0, 1, 1},
   {&__pyx_n_s_GetCameraList, __pyx_k_GetCameraList, sizeof(__pyx_k_GetCameraList), 0, 0, 1, 1},
+  {&__pyx_n_s_Length, __pyx_k_Length, sizeof(__pyx_k_Length), 0, 0, 1, 1},
   {&__pyx_n_s_NumDevices, __pyx_k_NumDevices, sizeof(__pyx_k_NumDevices), 0, 0, 1, 1},
+  {&__pyx_n_s_Version, __pyx_k_Version, sizeof(__pyx_k_Version), 0, 0, 1, 1},
   {&__pyx_n_s_all, __pyx_k_all, sizeof(__pyx_k_all), 0, 0, 1, 1},
   {&__pyx_n_s_cDevicePath, __pyx_k_cDevicePath, sizeof(__pyx_k_cDevicePath), 0, 0, 1, 1},
   {&__pyx_n_s_cFriendlyName, __pyx_k_cFriendlyName, sizeof(__pyx_k_cFriendlyName), 0, 0, 1, 1},
@@ -1442,11 +1593,16 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_eConnType, __pyx_k_eConnType, sizeof(__pyx_k_eConnType), 0, 0, 1, 1},
   {&__pyx_n_s_eUSBSpeed, __pyx_k_eUSBSpeed, sizeof(__pyx_k_eUSBSpeed), 0, 0, 1, 1},
+  {&__pyx_n_s_end, __pyx_k_end, sizeof(__pyx_k_end), 0, 0, 1, 1},
+  {&__pyx_n_s_file, __pyx_k_file, sizeof(__pyx_k_file), 0, 0, 1, 1},
+  {&__pyx_n_s_hello, __pyx_k_hello, sizeof(__pyx_k_hello), 0, 0, 1, 1},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
   {&__pyx_n_s_os, __pyx_k_os, sizeof(__pyx_k_os), 0, 0, 1, 1},
+  {&__pyx_n_s_print, __pyx_k_print, sizeof(__pyx_k_print), 0, 0, 1, 1},
   {&__pyx_n_s_range, __pyx_k_range, sizeof(__pyx_k_range), 0, 0, 1, 1},
+  {&__pyx_n_s_status, __pyx_k_status, sizeof(__pyx_k_status), 0, 0, 1, 1},
   {&__pyx_n_s_sys, __pyx_k_sys, sizeof(__pyx_k_sys), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_n_s_uiProdId, __pyx_k_uiProdId, sizeof(__pyx_k_uiProdId), 0, 0, 1, 1},
@@ -1465,17 +1621,29 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "FLIPro/pyflipro.pyx":15
+  /* "FLIPro/pyflipro.pyx":16
  * __all__ = []
  * 
  * def GetCameraList():             # <<<<<<<<<<<<<<
  *     cdef fli.FPRODEVICEINFO DeviceInfo
  *     cdef uint32_t NumDevices
  */
-  __pyx_tuple_ = PyTuple_Pack(2, __pyx_n_s_DeviceInfo, __pyx_n_s_NumDevices); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_tuple_ = PyTuple_Pack(3, __pyx_n_s_DeviceInfo, __pyx_n_s_NumDevices, __pyx_n_s_status); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
-  __pyx_codeobj__2 = (PyObject*)__Pyx_PyCode_New(0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple_, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_FLIPro_pyflipro_pyx, __pyx_n_s_GetCameraList, 15, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__2)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_codeobj__2 = (PyObject*)__Pyx_PyCode_New(0, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple_, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_FLIPro_pyflipro_pyx, __pyx_n_s_GetCameraList, 16, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__2)) __PYX_ERR(0, 16, __pyx_L1_error)
+
+  /* "FLIPro/pyflipro.pyx":25
+ *     return (DeviceInfo, NumDevices)
+ * 
+ * def GetAPIVersion():             # <<<<<<<<<<<<<<
+ *     cdef wchar_t Version
+ *     cdef uint32_t Length = 30
+ */
+  __pyx_tuple__3 = PyTuple_Pack(3, __pyx_n_s_Version, __pyx_n_s_Length, __pyx_n_s_status); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__3);
+  __Pyx_GIVEREF(__pyx_tuple__3);
+  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(0, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_FLIPro_pyflipro_pyx, __pyx_n_s_GetAPIVersion, 25, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -1784,28 +1952,40 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_warnings, __pyx_t_1) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "FLIPro/pyflipro.pyx":13
+  /* "FLIPro/pyflipro.pyx":14
  * # np.import_array()
  * 
  * __all__ = []             # <<<<<<<<<<<<<<
  * 
  * def GetCameraList():
  */
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_all, __pyx_t_1) < 0) __PYX_ERR(0, 13, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_all, __pyx_t_1) < 0) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "FLIPro/pyflipro.pyx":15
+  /* "FLIPro/pyflipro.pyx":16
  * __all__ = []
  * 
  * def GetCameraList():             # <<<<<<<<<<<<<<
  *     cdef fli.FPRODEVICEINFO DeviceInfo
  *     cdef uint32_t NumDevices
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6FLIPro_8pyflipro_1GetCameraList, NULL, __pyx_n_s_FLIPro_pyflipro); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6FLIPro_8pyflipro_1GetCameraList, NULL, __pyx_n_s_FLIPro_pyflipro); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GetCameraList, __pyx_t_1) < 0) __PYX_ERR(0, 15, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GetCameraList, __pyx_t_1) < 0) __PYX_ERR(0, 16, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "FLIPro/pyflipro.pyx":25
+ *     return (DeviceInfo, NumDevices)
+ * 
+ * def GetAPIVersion():             # <<<<<<<<<<<<<<
+ *     cdef wchar_t Version
+ *     cdef uint32_t Length = 30
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6FLIPro_8pyflipro_3GetAPIVersion, NULL, __pyx_n_s_FLIPro_pyflipro); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GetAPIVersion, __pyx_t_1) < 0) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "FLIPro/pyflipro.pyx":1
@@ -2218,6 +2398,143 @@ bad:
     Py_XDECREF(py_frame);
 }
 
+/* Print */
+#if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION < 3
+static PyObject *__Pyx_GetStdout(void) {
+    PyObject *f = PySys_GetObject((char *)"stdout");
+    if (!f) {
+        PyErr_SetString(PyExc_RuntimeError, "lost sys.stdout");
+    }
+    return f;
+}
+static int __Pyx_Print(PyObject* f, PyObject *arg_tuple, int newline) {
+    int i;
+    if (!f) {
+        if (!(f = __Pyx_GetStdout()))
+            return -1;
+    }
+    Py_INCREF(f);
+    for (i=0; i < PyTuple_GET_SIZE(arg_tuple); i++) {
+        PyObject* v;
+        if (PyFile_SoftSpace(f, 1)) {
+            if (PyFile_WriteString(" ", f) < 0)
+                goto error;
+        }
+        v = PyTuple_GET_ITEM(arg_tuple, i);
+        if (PyFile_WriteObject(v, f, Py_PRINT_RAW) < 0)
+            goto error;
+        if (PyString_Check(v)) {
+            char *s = PyString_AsString(v);
+            Py_ssize_t len = PyString_Size(v);
+            if (len > 0) {
+                switch (s[len-1]) {
+                    case ' ': break;
+                    case '\f': case '\r': case '\n': case '\t': case '\v':
+                        PyFile_SoftSpace(f, 0);
+                        break;
+                    default:  break;
+                }
+            }
+        }
+    }
+    if (newline) {
+        if (PyFile_WriteString("\n", f) < 0)
+            goto error;
+        PyFile_SoftSpace(f, 0);
+    }
+    Py_DECREF(f);
+    return 0;
+error:
+    Py_DECREF(f);
+    return -1;
+}
+#else
+static int __Pyx_Print(PyObject* stream, PyObject *arg_tuple, int newline) {
+    PyObject* kwargs = 0;
+    PyObject* result = 0;
+    PyObject* end_string;
+    if (unlikely(!__pyx_print)) {
+        __pyx_print = PyObject_GetAttr(__pyx_b, __pyx_n_s_print);
+        if (!__pyx_print)
+            return -1;
+    }
+    if (stream) {
+        kwargs = PyDict_New();
+        if (unlikely(!kwargs))
+            return -1;
+        if (unlikely(PyDict_SetItem(kwargs, __pyx_n_s_file, stream) < 0))
+            goto bad;
+        if (!newline) {
+            end_string = PyUnicode_FromStringAndSize(" ", 1);
+            if (unlikely(!end_string))
+                goto bad;
+            if (PyDict_SetItem(kwargs, __pyx_n_s_end, end_string) < 0) {
+                Py_DECREF(end_string);
+                goto bad;
+            }
+            Py_DECREF(end_string);
+        }
+    } else if (!newline) {
+        if (unlikely(!__pyx_print_kwargs)) {
+            __pyx_print_kwargs = PyDict_New();
+            if (unlikely(!__pyx_print_kwargs))
+                return -1;
+            end_string = PyUnicode_FromStringAndSize(" ", 1);
+            if (unlikely(!end_string))
+                return -1;
+            if (PyDict_SetItem(__pyx_print_kwargs, __pyx_n_s_end, end_string) < 0) {
+                Py_DECREF(end_string);
+                return -1;
+            }
+            Py_DECREF(end_string);
+        }
+        kwargs = __pyx_print_kwargs;
+    }
+    result = PyObject_Call(__pyx_print, arg_tuple, kwargs);
+    if (unlikely(kwargs) && (kwargs != __pyx_print_kwargs))
+        Py_DECREF(kwargs);
+    if (!result)
+        return -1;
+    Py_DECREF(result);
+    return 0;
+bad:
+    if (kwargs != __pyx_print_kwargs)
+        Py_XDECREF(kwargs);
+    return -1;
+}
+#endif
+
+/* CIntToPy */
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int32_t(int32_t value) {
+    const int32_t neg_one = (int32_t) ((int32_t) 0 - (int32_t) 1), const_zero = (int32_t) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(int32_t) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(int32_t) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+#ifdef HAVE_LONG_LONG
+        } else if (sizeof(int32_t) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+#endif
+        }
+    } else {
+        if (sizeof(int32_t) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+#ifdef HAVE_LONG_LONG
+        } else if (sizeof(int32_t) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+#endif
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(int32_t),
+                                     little, !is_unsigned);
+    }
+}
+
 /* CIntToPy */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_wchar_t(wchar_t value) {
     const wchar_t neg_one = (wchar_t) ((wchar_t) 0 - (wchar_t) 1), const_zero = (wchar_t) 0;
@@ -2373,6 +2690,43 @@ static PyObject* __pyx_convert__to_py_struct__device_info_t(struct device_info_t
   Py_DECREF(res);
   return NULL;
 }
+/* PrintOne */
+#if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION < 3
+static int __Pyx_PrintOne(PyObject* f, PyObject *o) {
+    if (!f) {
+        if (!(f = __Pyx_GetStdout()))
+            return -1;
+    }
+    Py_INCREF(f);
+    if (PyFile_SoftSpace(f, 0)) {
+        if (PyFile_WriteString(" ", f) < 0)
+            goto error;
+    }
+    if (PyFile_WriteObject(o, f, Py_PRINT_RAW) < 0)
+        goto error;
+    if (PyFile_WriteString("\n", f) < 0)
+        goto error;
+    Py_DECREF(f);
+    return 0;
+error:
+    Py_DECREF(f);
+    return -1;
+    /* the line below is just to avoid C compiler
+     * warnings about unused functions */
+    return __Pyx_Print(f, NULL, 0);
+}
+#else
+static int __Pyx_PrintOne(PyObject* stream, PyObject *o) {
+    int res;
+    PyObject* arg_tuple = PyTuple_Pack(1, o);
+    if (unlikely(!arg_tuple))
+        return -1;
+    res = __Pyx_Print(stream, arg_tuple, 1);
+    Py_DECREF(arg_tuple);
+    return res;
+}
+#endif
+
 /* CIntFromPyVerify */
 #define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
     __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 0)
