@@ -87,7 +87,7 @@ inc_pro = ['libflipro-1.11.23']
 libdir_pro = []
 mac_pro = []
 if platform.system() == "Windows":
-    lib_pro = ["libflipro.lib"]
+    lib_pro = ["libflipro"]
     if platform.architecture()[0] == "64bit":
         libdir_pro = [os.path.join("libflipro-1.11.23", "win64")]
     elif platform.architecture()[0] == "32bit":

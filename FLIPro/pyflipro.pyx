@@ -1,16 +1,19 @@
 import os
 import sys
 import warnings
-import numpy as np
+# import numpy as np
 
 cimport cython
 cimport libflipro as fli
-cimport numpy as np
-from libc.stdlib cimport malloc, free
+# cimport numpy as np
+from libc.stdint cimport uint32_t
 
-np.import_array()
+# np.import_array()
 
 __all__ = []
 
-def GetCameraList(DeviceInfo, NumDevices):
-    return FPROCam_GetCameraList(DeviceInfo, NumDevices)
+def GetCameraList():
+    cdef fli.FPRODEVICEINFO DeviceInfo
+    cdef uint32_t NumDevices
+    fli.FPROCam_GetCameraList(&DeviceInfo, &NumDevices)
+    return (DeviceInfo, NumDevices)
