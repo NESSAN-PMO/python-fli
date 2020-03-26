@@ -9,6 +9,7 @@ cimport libflipro as fli
 from libc.stdint cimport uint32_t, int32_t
 from libc.stddef cimport wchar_t
 from libcpp cimport bool
+import os
 
 # np.import_array()
 
