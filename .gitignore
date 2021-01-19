@@ -27,6 +27,8 @@ tags
 *.py[ocd]
 *.so
 *.ko
+FLI/*.c
+FLIPro/*.c
 
 # Packages #
 ############

@@ -4,12 +4,11 @@ import warnings
 # import numpy as np
 
 cimport cython
-cimport libflipro as fli
+cimport FLIPro.libflipro as fli
 # cimport numpy as np
 from libc.stdint cimport uint32_t, int32_t
 from libc.stddef cimport wchar_t
 from libcpp cimport bool
-import os
 
 # np.import_array()
 
