@@ -3,7 +3,7 @@
 @Author: F.O.X
 @Date: 2020-03-08 00:01:00
 @LastEditor: F.O.X
-@LastEditTime: 2020-03-14 14:52:25
+LastEditTime: 2021-01-20 11:33:25
 '''
 
 from .pyfli import *
@@ -274,7 +274,7 @@ class Camera():
 
     @property
     def PercentCompleted(self):
-        return int((self.exp - getExposureStatus(self.cam)) / self.exp * 100)
+        return int((self.exptime - getExposureStatus(self.cam)) / self.exptime * 100)
 
     @property
     def PixelSizeX(self):
