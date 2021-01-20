@@ -3,7 +3,7 @@
 @Author: F.O.X
 @Date: 2020-03-08 00:01:00
 @LastEditor: F.O.X
-LastEditTime: 2021-01-20 11:33:25
+LastEditTime: 2021-01-20 13:05:22
 '''
 
 from .pyfli import *
@@ -246,11 +246,11 @@ class Camera():
 
     @property
     def ImageArray(self):
-        return grabFrame(self.cam)
+        return grabFrame(self.cam).transpose()
 
     @property
     def ImageArrayVariant(self):
-        return grabFrame(self.cam)
+        return grabFrame(self.cam).transpose()
 
     @property
     def LastExposureDuration(self):
@@ -274,7 +274,7 @@ class Camera():
 
     @property
     def PercentCompleted(self):
-        return int((self.exptime - getExposureStatus(self.cam)) / self.exptime * 100)
+        return 0 if self.exptime == 0 else int((self.exptime - getExposureStatus(self.cam)) / self.exptime * 100)
 
     @property
     def PixelSizeX(self):
