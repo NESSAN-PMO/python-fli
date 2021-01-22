@@ -21,7 +21,6 @@ tags
 #*.a
 *.com
 *.class
-*.dll
 *.exe
 *.o
 *.py[ocd]

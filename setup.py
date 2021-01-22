@@ -85,15 +85,18 @@ compiler_settings = {
 lib_pro = []
 libdir_pro = []
 mac_pro = []
-inc_pro = []
+inc_pro = ['FLIPro', np.get_include()]
+data_pro = []
 if platform.system() == "Windows":
-    lib_pro = ["libflipro"]
+    lib_pro += ["libflipro"]
     if platform.architecture()[0] == "64bit":
-        inc_pro = [os.path.join("libflipro", "win64")]
-        libdir_pro = [os.path.join("libflipro", "win64")]
+        inc_pro += [os.path.join("libflipro", "win64")]
+        libdir_pro += [os.path.join("libflipro", "win64")]
+        data_pro += [os.path.join("libflipro", "win64", "libflipro.dll")]
     elif platform.architecture()[0] == "32bit":
-        inc_pro = [os.path.join("libflipro", "win32")]
-        libdir_pro = [os.path.join("libflipro", "win32")]
+        inc_pro += [os.path.join("libflipro", "win32")]
+        libdir_pro += [os.path.join("libflipro", "win32")]
+        data_pro += [os.path.join("libflipro", "win32", "libflipro.dll")]
 src_pro = [os.path.join("FLIPro", "pyflipro.pyx")]
 compiler_pro = {
     'libraries': lib_pro,
@@ -118,6 +121,7 @@ setup(
     description="Python Interface for Finger Lakes Instrumention with ASCOM compatible API",
     packages=['FLI', 'FLIPro'],
     package_dir={'FLI': 'FLI', 'FLIPro': 'FLIPro'},
+    data_files=[(os.path.join('..', '..', 'FLIPro'), data_pro)],
     ext_modules=ext_modules,
     requires=['numpy (>=1.5)'],
     classifiers=[

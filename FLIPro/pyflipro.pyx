@@ -1,16 +1,16 @@
 import os
 import sys
 import warnings
-# import numpy as np
+import numpy as np
 
 cimport cython
-cimport FLIPro.libflipro as fli
-# cimport numpy as np
+cimport libflipro as fli
+cimport numpy as np
 from libc.stdint cimport uint32_t, int32_t
 from libc.stddef cimport wchar_t
 from libcpp cimport bool
 
-# np.import_array()
+np.import_array()
 
 __all__ = []
 
