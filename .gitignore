@@ -18,15 +18,16 @@ tags
 
 # Compiled source #
 ###################
-*.a
+#*.a
 *.com
 *.class
-*.dll
 *.exe
 *.o
 *.py[ocd]
 *.so
 *.ko
+FLI/*.c
+FLIPro/*.c
 
 # Packages #
 ############
@@ -86,4 +87,3 @@ Thumbs.db
 ###################################
 modules.order
 Module.symvers
-pyfli/pyfli.c

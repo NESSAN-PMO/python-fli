@@ -83,15 +83,20 @@ compiler_settings = {
     'export_symbols': None
 }
 lib_pro = []
-inc_pro = ['libflipro-1.11.23']
 libdir_pro = []
 mac_pro = []
+inc_pro = ['FLIPro', np.get_include()]
+data_pro = []
 if platform.system() == "Windows":
-    lib_pro = ["libflipro.lib"]
+    lib_pro += ["libflipro"]
     if platform.architecture()[0] == "64bit":
-        libdir_pro = [os.path.join("libflipro-1.11.23", "win64")]
+        inc_pro += [os.path.join("libflipro", "win64")]
+        libdir_pro += [os.path.join("libflipro", "win64")]
+        data_pro += [os.path.join("libflipro", "win64", "libflipro.dll")]
     elif platform.architecture()[0] == "32bit":
-        libdir_pro = []
+        inc_pro += [os.path.join("libflipro", "win32")]
+        libdir_pro += [os.path.join("libflipro", "win32")]
+        data_pro += [os.path.join("libflipro", "win32", "libflipro.dll")]
 src_pro = [os.path.join("FLIPro", "pyflipro.pyx")]
 compiler_pro = {
     'libraries': lib_pro,
@@ -108,7 +113,7 @@ ext_modules = [Extension('FLI.pyfli', src, **compiler_settings),
 
 setup(
     name="python-fli",
-    version="1.1",
+    version="1.2",
     author="Fockez Zhang",
     author_email="fockez@live.com",
     download_url=" ",
@@ -116,6 +121,7 @@ setup(
     description="Python Interface for Finger Lakes Instrumention with ASCOM compatible API",
     packages=['FLI', 'FLIPro'],
     package_dir={'FLI': 'FLI', 'FLIPro': 'FLIPro'},
+    data_files=[(os.path.join('..', '..', 'FLIPro'), data_pro)],
     ext_modules=ext_modules,
     requires=['numpy (>=1.5)'],
     classifiers=[

@@ -7,6 +7,16 @@
             "label": "build",
             "type": "shell",
             "command": "python setup.py build"
+        },
+        {
+            "label": "build ext",
+            "type": "shell",
+            "command": "python setup.py build_ext --inplace"
+        },
+        {
+            "label": "build wheel",
+            "type": "shell",
+            "command": "python setup.py bdist_wheel"
         }
     ]
 }
