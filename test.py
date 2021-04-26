@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import time
+from astropy.io import fits
 # import FLIPro.pyflipro as lib
 
 # print(bytes(lib.GetAPIVersion()))
@@ -11,12 +13,11 @@
 # #lib.SetFanEnable(cam, True)
 # lib.CameraClose(cam)
 
+from FLI import Camera
 
-import numpy as np
-from astropy.io import fits
-import time
-
-d = np.zeros((14192, 10640), dtype=np.uint16)
-t0 = time.time()
-fits.PrimaryHDU(data=d).writeto("c:\\temp\\test.fits", overwrite=True)
-print(time.time() - t0)
+c = Camera("FLI.usb.0")
+c.Connected = True
+c.StartExposure(0, 0)
+time.sleep(1)
+data = c.ImageArray
+fits.PrimaryHDU(data=data).writeto("test.fits")

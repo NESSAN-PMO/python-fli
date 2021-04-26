@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Setup script for pyfli.
+"""Setup script for python-fli.
 
 """
 import numpy as np
