@@ -113,7 +113,7 @@ ext_modules = [Extension('FLI.pyfli', src, **compiler_settings),
 
 setup(
     name="python-fli",
-    version="1.2",
+    version="1.3",
     author="Fockez Zhang",
     author_email="fockez@live.com",
     download_url=" ",

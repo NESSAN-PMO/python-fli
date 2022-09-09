@@ -3,7 +3,7 @@
 @Author: F.O.X
 @Date: 2020-03-08 00:01:00
 @LastEditor: F.O.X
-LastEditTime: 2021-01-20 13:05:22
+LastEditTime: 2022-09-10 02:44:40
 '''
 
 from .pyfli import *
@@ -11,9 +11,7 @@ from .pyfli import *
 
 class Camera():
     def __init__(self, name):
-        model, self.interface, num = name.split('.')
-        if model != 'FLI':
-            raise NameError(f"Not support model {model}")
+        self.interface, num = name.split('.')
         self.camname = FLIList(self.interface, 'camera')[int(num)][0]
         self.cooler = False
         self.exptime = 0
@@ -224,8 +222,10 @@ class Camera():
     def CoolerOn(self, value):
         if value:
             self.cooler = True
+            setTemperature(self.cam, self.setemp)
         else:
             self.cooler = False
+            setTemperature(self.cam, 25)
 
     @property
     def CoolerPower(self):
