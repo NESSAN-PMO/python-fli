@@ -1,6 +1,4 @@
-from libc.stdint cimport uint32_t, uint64_t, uint8_t, uint16_t, int32_t
-from libc.stddef cimport wchar_t
-from libcpp cimport bool
+from libc.stdint cimport uint32_t, uint64_t, int16_t, uint16_t, uint8_t, int32_t
 
 cdef extern from "libflipro.h":
 
@@ -14,6 +12,8 @@ cdef extern from "libflipro.h":
         FPRO_CAM_DEVICE_TYPE_DC230_42
         FPRO_CAM_DEVICE_TYPE_DC230_84
         FPRO_CAM_DEVICE_TYPE_DC4320
+        FPRO_CAM_DEVICE_TYPE_SONYIMX183
+        FPRO_CAM_DEVICE_TYPE_FTM
 
     ctypedef enum FPROCONNECTION:
         FPRO_CONNECTION_USB
@@ -46,6 +46,12 @@ cdef extern from "libflipro.h":
     ctypedef enum FPROTESTIMAGETYPE:
         FLI_TESTIMAGE_TYPE_ROW
         FLI_TESTIMAGE_TYPE_COL
+        FLI_TESTIMAGE_IMX183_VERTICAL
+        FLI_TESTIMAGE_IMX183_HORIZONTAL
+        FLI_TESTIMAGE_IMX183_ALL_LOW
+        FLI_TESTIMAGE_IMX183_ALL_HIGH
+        FLI_TESTIMAGE_IMX183_LOW_HIGH
+        FLI_TESTIMAGE_IMX183_HIGH_LOW
 
     ctypedef enum FPROEXTTRIGTYPE:
         FLI_EXT_TRIGGER_FALLING_EDGE
@@ -53,11 +59,19 @@ cdef extern from "libflipro.h":
         FLI_EXT_TRIGGER_EXPOSE_ACTIVE_LOW
         FLI_EXT_TRIGGER_EXPOSE_ACTIVE_HIGH
 
+    cdef struct ext_trigger_info_t:
+        FPROEXTTRIGTYPE eTriggerType
+        bool bSingleFramePerTrigger
+        bool bEnable
+
+    ctypedef ext_trigger_info_t FPROEXTTRIGINFO
+
     ctypedef enum FPRODBGLEVEL:
         FPRO_DEBUG_NONE
         FPRO_DEBUG_ERROR
         FPRO_DEBUG_WARNING
         FPRO_DEBUG_INFO
+        FPRO_DEBUG_REGRW
         FPRO_DEBUG_DEBUG
         FPRO_DEBUG_TRACE
 
@@ -149,10 +163,18 @@ cdef extern from "libflipro.h":
         uint64_t uiDiskFramesWritten
         double dblDiskAvgMBPerSec
         double dblDiskPeakMBPerSec
+        double dblOverallFramesPerSec
+        double dblOverallMBPerSec
         FPROSTREAMERSTATUS iStatus
         uint32_t uiReserved
 
     ctypedef fpro_stream_stats_t FPROSTREAMSTATS
+
+    cdef struct fpro_stream_preview_info_t:
+        uint32_t uiFrameNumber
+        FPROSTREAMSTATS streamStats
+
+    ctypedef fpro_stream_preview_info_t FPROPREVIEW
 
     ctypedef enum FPRO_FRAME_TYPE:
         FPRO_FRAMETYPE_NORMAL
@@ -166,19 +188,72 @@ cdef extern from "libflipro.h":
         FPROCMS_2
         FPROCMS_4
 
+    cdef struct crop_rect_t:
+        uint32_t uiColumnOffset
+        uint32_t uiRowOffset
+        uint32_t uiWidth
+        uint32_t uiHeight
+
+    ctypedef crop_rect_t FPRO_CROP
+
+    cdef struct ref_frames_t:
+        uint32_t uiWidth
+        uint32_t uiHeight
+        int16_t* pAdditiveLowGain
+        int16_t* pAdditiveHighGain
+        uint16_t* pMultiplicativeLowGain
+        uint16_t* pMultiplicativeHighGain
+
+    ctypedef ref_frames_t FPRO_REFFRAMES
+
+    ctypedef enum FPRO_IMAGE_FORMAT:
+        IFORMAT_NONE
+        IFORMAT_RCD
+        IFORMAT_TIFF
+        IFORMAT_FITS
+
+    cdef struct conv_info_t:
+        FPRO_IMAGE_FORMAT eFormat
+        wchar_t* pDSNUFile
+        wchar_t* pPRNUFile
+
+    ctypedef conv_info_t FPRO_CONV
+
+    ctypedef enum FPRO_HWMERGEFRAMES:
+        HWMERGE_FRAME_BOTH
+        HWMERGE_FRAME_LOWONLY
+        HWMERGE_FRAME_HIGHONLY
+
+    cdef struct hw_merge_enables_t:
+        bool bMergeEnable
+        FPRO_IMAGE_FORMAT eMergeFormat
+        FPRO_HWMERGEFRAMES eMergeFrames
+
+    ctypedef hw_merge_enables_t FPRO_HWMERGEENABLE
+
+    ctypedef enum FPRO_MERGEALGO:
+        FPROMERGE_ALGO
+        FPROMERGE_ALGO_REF_FRAME
+
     cdef struct unpacked_images_t:
         uint8_t* pMetaData
         uint32_t uiMetaDataSize
         bool bMetaDataRequest
         uint16_t* pLowImage
         uint64_t uiLowImageSize
+        uint64_t uiLowBufferSize
         bool bLowImageRequest
         uint16_t* pHighImage
         uint64_t uiHighImageSize
+        uint64_t uiHighBufferSize
         bool bHighImageRequest
         uint16_t* pMergedImage
         uint64_t uiMergedImageSize
+        uint64_t uiMergedBufferSize
         bool bMergedImageRequest
+        FPRO_MERGEALGO eMergAlgo
+        FPRO_CROP cropRect
+        bool bRequestCrop
 
     ctypedef unpacked_images_t FPROUNPACKEDIMAGES
 
@@ -220,6 +295,8 @@ cdef extern from "libflipro.h":
 
     int32_t FPROCam_GetCameraList(FPRODEVICEINFO* pDeviceInfo, uint32_t* pNumDevices)
 
+    int32_t FPROCam_GetDeviceInfo(int32_t iHandle, FPRODEVICEINFO* pDeviceInfo)
+
     int32_t FPROCam_Open(FPRODEVICEINFO* pDevInfo, int32_t* pHandle)
 
     int32_t FPROCam_Close(int32_t iHandle)
@@ -228,9 +305,9 @@ cdef extern from "libflipro.h":
 
     int32_t FPROCam_GetDeviceVersion(int32_t iHandle, FPRODEVICEVERS* pVersion)
 
-    int32_t FPROFrame_CaptureAbort(int32_t iHandle)
+    int32_t FPROCam_GetHostSerialNumbers(int32_t iHandle, wchar_t* pFibre, wchar_t* pPcie, uint32_t uiLength)
 
-    int32_t FPROFrame_CaptureEnd(int32_t iHandle)
+    int32_t FPROFrame_CaptureAbort(int32_t iHandle)
 
     int32_t FPROFrame_CaptureStart(int32_t iHandle, uint32_t uiFrameCount)
 
@@ -238,7 +315,9 @@ cdef extern from "libflipro.h":
 
     int32_t FPROFrame_CaptureThumbnail(int32_t iHandle)
 
-    int32_t FPROFrame_ComputeFrameSize(int32_t iHandle, uint32_t uiPixelWidth, uint32_t uiPixelHeight)
+    int32_t FPROFrame_ComputeFrameSize(int32_t iHandle)
+
+    int32_t FPROFrame_ComputeFrameSizePixels(int32_t iHandle, uint32_t* pTotalWidth, uint32_t* pTotalHeight)
 
     void FPROFrame_FreeUnpackedBuffers(FPROUNPACKEDIMAGES* pUPBuffers)
 
@@ -268,6 +347,16 @@ cdef extern from "libflipro.h":
 
     int32_t FPROFrame_GetVideoFrameExt(int32_t iHandle, uint8_t* pFrameData, uint32_t* pSize)
 
+    int32_t FPROFrame_UnpackFile(wchar_t* pFileName, FPROUNPACKEDIMAGES* pUPBuffers, FPROUNPACKEDSTATS* pStats)
+
+    int32_t FPROFrame_UnpackFileEx(wchar_t* pFileName, FPROUNPACKEDIMAGES* pUPBuffers, FPROUNPACKEDSTATS* pStats, wchar_t* pDSNUFile, wchar_t* pPRNUFile)
+
+    int32_t FPROFrame_ConvertFile(wchar_t* pInRcdFile, FPRO_CONV* pConvInfo, wchar_t* pOutFile)
+
+    int32_t FPROFrame_ConvertFileEx(wchar_t* pInRcdFile, FPRO_CONV* pConvInfo, FPROUNPACKEDIMAGES* pUPBuffers, FPROUNPACKEDSTATS* pStats)
+
+    int32_t FPROFrame_MetaDataToString(wchar_t* pFileName, wchar_t* pMetaString, uint32_t uiMaxSize)
+
     int32_t FPROFrame_IsAvailable(int32_t iHandle, bool* pAvailable)
 
     int32_t FPROFrame_SetDummyPixelEnable(int32_t iHandle, bool bEnable)
@@ -290,11 +379,35 @@ cdef extern from "libflipro.h":
 
     int32_t FPROFrame_SetImageArea(int32_t iHandle, uint32_t uiColOffset, uint32_t uiRowOffset, uint32_t uiWidth, uint32_t uiHeight)
 
+    int32_t FPROFrame_SetUnpackingBiasFrames(int32_t iHandle, uint32_t uiWidth, uint32_t uiHeight, uint16_t* pLowFrame, uint16_t* pHighFrame)
+
+    int32_t FPROFrame_SetUnpackingFlatFieldFrames(int32_t iHandle, uint32_t uiWidth, uint32_t uiHeight, uint16_t* pLowFrame, uint16_t* pHighFrame)
+
+    int32_t FPROFrame_StreamInitialize(int32_t iHandle, uint32_t uiFrameSizeBytes, wchar_t* pRootPath, wchar_t* pFilePrefix)
+
+    int32_t FPROFrame_StreamDeinitialize(int32_t iHandle)
+
+    int32_t FPROFrame_StreamStart(int32_t iHandle, uint32_t uiFrameCount, uint64_t uiFrameIntervalMS)
+
+    int32_t FPROFrame_StreamStop(int32_t iHandle)
+
+    int32_t FPROFrame_StreamGetStatistics(int32_t iHandle, FPROSTREAMSTATS* pStats)
+
+    int32_t FPROFrame_StreamGetPreviewImage(int32_t iHandle, uint8_t* pImage, uint32_t* pLength, uint32_t uiTimeoutMSecs)
+
+    int32_t FPROFrame_StreamGetPreviewImageEx(int32_t iHandle, uint8_t* pImage, uint32_t* pLength, FPROPREVIEW* pInfo, uint32_t uiTimeoutMSecs)
+
+    int32_t FPROCtrl_GetBurstModeEnable(int32_t iHandle, bool* pEnable)
+
     int32_t FPROCtrl_GetCoolerDutyCycle(int32_t iHandle, uint32_t* pDutyCycle)
+
+    int32_t FPROCtrl_GetCameraBufferBypass(int32_t iHandle, bool* pCameraBypassEnable, bool* pHostBypassEnable)
+
+    int32_t FPROCtrl_GetElectricallyBlackPixelEnable(int32_t iHandle, bool* pEnable)
 
     int32_t FPROCtrl_GetExposure(int32_t iHandle, uint64_t* pExposureTime, uint64_t* pFrameDelay, bool* pImmediate)
 
-    int32_t FPROCtrl_GetExternalTriggerEnable(int32_t iHandle, bool* pEnable, FPROEXTTRIGTYPE* pTrigType)
+    int32_t FPROCtrl_GetExternalTriggerEnable(int32_t iHandle, FPROEXTTRIGINFO* pTrigInfo)
 
     int32_t FPROCtrl_GetFanEnable(int32_t iHandle, bool* pOn)
 
@@ -310,6 +423,8 @@ cdef extern from "libflipro.h":
 
     int32_t FPROCtrl_GetLEDDuration(int32_t iHandle, uint32_t* pDurationUsec)
 
+    int32_t FPROCtrl_GetPCIETemperatures(int32_t iHandle, double* pPcieFpga, double* pFibreFpga)
+
     int32_t FPROCtrl_GetSensorTemperature(int32_t iHandle, int32_t* pTemp)
 
     int32_t FPROCtrl_GetSensorTemperatureReadEnable(int32_t iHandle, bool* pEnable)
@@ -322,11 +437,17 @@ cdef extern from "libflipro.h":
 
     int32_t FPROCtrl_GetTemperatureSetPoint(int32_t iHandle, double* pSetPoint)
 
+    int32_t FPROCtrl_SetBurstModeEnable(int32_t iHandle, bool bEnable)
+
+    int32_t FPROCtrl_SetCameraBufferBypass(int32_t iHandle, bool bCameraBypassEnable, bool bHostBypassEnable)
+
+    int32_t FPROCtrl_SetElectricallyBlackPixelEnable(int32_t iHandle, bool bEnable)
+
     int32_t FPROCtrl_SetExposure(int32_t iHandle, uint64_t uiExposureTime, uint64_t uiFrameDelay, bool bImmediate)
 
     int32_t FPROCtrl_SetExposureEx(int32_t iHandle, uint64_t uiExposureTime, uint64_t uiFrameDelay, bool bImmediate, uint64_t* pActualExposureTime, uint64_t* pActualFrameDelay)
 
-    int32_t FPROCtrl_SetExternalTriggerEnable(int32_t iHandle, bool bEnable, FPROEXTTRIGTYPE eTrigType)
+    int32_t FPROCtrl_SetExternalTriggerEnable(int32_t iHandle, uint32_t uiFrameCount, FPROEXTTRIGINFO* pTrigInfo)
 
     int32_t FPROCtrl_SetFanEnable(int32_t iHandle, bool bOn)
 
@@ -366,7 +487,9 @@ cdef extern from "libflipro.h":
 
     int32_t FPROSensor_GetGainTable(int32_t iHandle, FPROGAINTABLE eTable, FPROGAINVALUE* pGainValues, uint32_t* pNumEntries)
 
-    int32_t FPROSensor_GetHDREnable(int32_t iHandle, bool* pEnable)
+    int32_t FPROSensor_GetHDREnable(int32_t iHandle, bool* pHDREnable)
+
+    int32_t FPROSensor_GetHighGainOnlyEnable(int32_t iHandle, bool* pHighGainOnly)
 
     int32_t FPROSensor_GetMode(int32_t iHandle, uint32_t uiModeIndex, FPROSENSMODE* pMode)
 
@@ -380,6 +503,8 @@ cdef extern from "libflipro.h":
 
     int32_t FPROSensor_GetTrainingEnable(int32_t iHandle, bool* pEnable)
 
+    int32_t FPROSensor_SetAnalogGain(int32_t iHandle, int32_t iGainValue)
+
     int32_t FPROSensor_SetBinning(int32_t iHandle, uint32_t uiXBin, uint32_t uiYBin)
 
     int32_t FPROSensor_SetBlackLevelAdjust(int32_t iHandle, uint32_t uiAdjustValue)
@@ -389,6 +514,8 @@ cdef extern from "libflipro.h":
     int32_t FPROSensor_SetBlackSunAdjust(int32_t iHandle, uint32_t uiAdjustValue)
 
     int32_t FPROSensor_SetBlackSunAdjustEx(int32_t iHandle, FPROBLACKADJUSTCHAN eChan, uint32_t uiAdjustValue)
+
+    int32_t FPROSensor_SetHighGainOnlyEnable(int32_t iHandle, bool bHighGainOnly)
 
     int32_t FPROSensor_SetGainIndex(int32_t iHandle, FPROGAINTABLE eTable, uint32_t uiGainIndex)
 
@@ -404,9 +531,13 @@ cdef extern from "libflipro.h":
 
     int32_t FPROAuxIO_GetPin(int32_t iHandle, FPROAUXIO eAuxIO, FPROAUXIO_DIR* pDirection, FPROAUXIO_STATE* pState)
 
+    int32_t FPROAuxIO_GetExposureActivePolarity(int32_t iHandle, bool* pActiveHigh)
+
     int32_t FPROAuxIO_GetExposureActiveType(int32_t iHandle, FPROAUXIO_EXPACTIVETYPE* pType)
 
     int32_t FPROAuxIO_SetPin(int32_t iHandle, FPROAUXIO eAuxIO, FPROAUXIO_DIR eDirection, FPROAUXIO_STATE eState)
+
+    int32_t FPROAuxIO_SetExposureActivePolarity(int32_t iHandle, bool bActiveHigh)
 
     int32_t FPROAuxIO_SetExposureActiveType(int32_t iHandle, FPROAUXIO_EXPACTIVETYPE eType)
 
@@ -420,6 +551,28 @@ cdef extern from "libflipro.h":
 
     int32_t FPROFAck_FlushImageQueue(int32_t iHandle)
 
+    int32_t FPROAlgo_StackInitialize(int32_t iHandle)
+
+    int32_t FPROAlgo_StackNextFrame(int32_t iHandle, uint8_t* pFrameData, uint32_t* pSize, uint32_t uiTimeoutMS)
+
+    int32_t FPROAlgo_StackFinish(int32_t iHandle, uint16_t** ppLowMeanFrame, uint16_t** ppHighMeanFrame, uint32_t* pNumPixels, uint8_t** ppMetaData, uint32_t* puiMetaSize)
+
+    int32_t FPROAlgo_StackDeinitialize(int32_t iHandle)
+
+    int32_t FPROAlgo_SetHardwareMergeReferenceFrames(int32_t iHandle, FPRO_REFFRAMES* pRefFrames)
+
+    int32_t FPROAlgo_SetHardwareMergeReferenceFiles(int32_t iHandle, wchar_t* pDSNUFile, wchar_t* pPRNUFile)
+
+    int32_t FPROAlgo_GetHardwareMergeThresholds(int32_t iHandle, uint16_t* pHighGainThreshold, uint16_t* pMergeDifferenceThreshold)
+
+    int32_t FPROAlgo_SetHardwareMergeThresholds(int32_t iHandle, uint16_t uiHighGainThreshold, uint16_t uiMergeDifferenceThreshold)
+
+    int32_t FPROAlgo_GetHardwareMergeEnables(int32_t iHandle, FPRO_HWMERGEENABLE* pMergeEnables)
+
+    int32_t FPROAlgo_SetHardwareMergeEnables(int32_t iHandle, FPRO_HWMERGEENABLE mergeEnables)
+
+    int32_t FPROAlgo_MergeRcdToFits(wchar_t* pRCDFileName, wchar_t* pDSNURef, wchar_t* pPRNURef)
+
     int32_t FPRONV_WriteNVStorage(int32_t iHandle, uint32_t uiOffset, uint8_t* pData, uint32_t uiLength)
 
     int32_t FPRONV_ReadNVStorage(int32_t iHandle, uint32_t uiOffset, uint8_t* pData, uint32_t uiLength)
@@ -431,6 +584,10 @@ cdef extern from "libflipro.h":
     int32_t FPROCmd_ReadReg(int32_t iHandle, uint32_t uiReg, uint32_t* pValue)
 
     int32_t FPROCmd_WriteReg(int32_t iHandle, uint32_t uiReg, uint32_t uiValue, uint32_t uiMask)
+
+    int32_t FPROCmd_PCIEReadReg(int32_t iHandle, uint32_t uiReg, uint32_t* pValue)
+
+    int32_t FPROCmd_PCIEWriteReg(int32_t iHandle, uint32_t uiReg, uint32_t uiValue)
 
     int32_t FPRODebug_EnableLevel(bool bEnable, FPRODBGLEVEL eLevel)
 

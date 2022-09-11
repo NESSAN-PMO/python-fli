@@ -61,7 +61,7 @@ extern "C" {
 /// @cond DO_NOT_DOCUMENT
 #define FPRO_API_VERSION_MAJOR (1)
 #define FPRO_API_VERSION_MINOR (12)    // Should change if must change the Camera side as well
-#define FPRO_API_VERSION_BUILD (22)    // Minor changes not requiring Camera change
+#define FPRO_API_VERSION_BUILD (59)    // Minor changes not requiring Camera change
 /// @endcond
 
 //
@@ -138,19 +138,24 @@ extern "C" {
 /// @brief Enum value = 0x03023084
 /// @var FPRODEVICETYPE::FPRO_CAM_DEVICE_TYPE_SONYIMX183
 /// @brief Enum value = 0x04000183
+/// @var FPRODEVICETYPE::FPRO_CAM_DEVICE_TYPE_FTM
+/// @brief Enum value = 0x04000F1F
 /// 
+
 typedef enum
 {
-	FPRO_CAM_DEVICE_TYPE_GSENSE400  = 0x01000400,
+	FPRO_CAM_DEVICE_TYPE_GSENSE400 = 0x01000400,
 	FPRO_CAM_DEVICE_TYPE_GSENSE2020 = 0x01002020,
 	FPRO_CAM_DEVICE_TYPE_GSENSE4040 = 0x01004040,
 	FPRO_CAM_DEVICE_TYPE_GSENSE6060 = 0x01006060,
 	FPRO_CAM_DEVICE_TYPE_KODAK47051 = 0x02047051,
 	FPRO_CAM_DEVICE_TYPE_KODAK29050 = 0x02029050,
-	FPRO_CAM_DEVICE_TYPE_DC230_42   = 0x03023042,
+	FPRO_CAM_DEVICE_TYPE_DC230_42 = 0x03023042,
 	FPRO_CAM_DEVICE_TYPE_DC230_84 = 0x03023084,
 	FPRO_CAM_DEVICE_TYPE_DC4320 = 0x03004320,
-	FPRO_CAM_DEVICE_TYPE_SONYIMX183 = 0x04000183
+	FPRO_CAM_DEVICE_TYPE_SONYIMX183 = 0x04000183,
+	FPRO_CAM_DEVICE_TYPE_FTM = 0x04000F1F
+
 } FPRODEVICETYPE;
 
 ///
@@ -339,7 +344,7 @@ typedef enum
 /// This enumeration defines the types of external triggers available.
 /// There is a single external trigger line available to the camera.  This
 /// enumeration governs how this signal behaves.  This enumeration is used with
-/// the FPROCtrl_GetExternalTriggerEnable and FPROCtrl_SetExternalTriggerEnable API's.
+/// the #FPROCtrl_GetExternalTriggerEnable and #FPROCtrl_SetExternalTriggerEnable API's.
 ///
 /// @var FPROEXTTRIGTYPE::FLI_EXT_TRIGGER_RISING_EDGE
 /// @brief Trigger Exposure on Rising Edge
@@ -373,6 +378,32 @@ typedef enum
 } FPROEXTTRIGTYPE;
 
 ///
+/// @typedef ext_trigger_info_t FPROEXTTRIGINFO
+/// @brief External Trigger Setup Details
+///
+/// This structure is used to set up the External Trigger capability on the camera.
+/// See #FPROEXTTRIGTYPE for more information.
+/// <br>
+/// Note that the bSingleFramePerTrigger function is not avaliable on older cameras.  This 
+/// function was introduced in the camera firmware versions 0x2A.  In addition, in API versions
+/// prior to 1.12.32, the API enforced an Image Count of 1 when enabling the external trigger.
+/// <br>
+///
+/// @var FPROEXTTRIGINFO::eTriggerType 
+/// @brief The trigger behaovior type.
+/// @var FPROEXTTRIGINFO::bSingleFramePerTrigger 
+/// @brief Default behavior of the external trigger gets uiFrameCount images.  Setting this ensures
+///        only a single frame per trigger.  see #FPROCtrl_SetExternalTriggerEnable() for the uiFrameCount parameter.
+/// @var FPROEXTTRIGINFO::bEnable 
+/// @brief True= enable the external trigger.  False= disable the external trigger.
+typedef struct ext_trigger_info_t
+{
+	FPROEXTTRIGTYPE eTriggerType;
+	bool            bSingleFramePerTrigger;
+	bool            bEnable;
+} FPROEXTTRIGINFO;
+
+///
 /// @enum FPRODBGLEVEL
 /// @brief Debug Capability
 ///
@@ -387,16 +418,19 @@ typedef enum
 /// @brief WARNING and ERROR debug is output
 /// @var FPRODBGLEVEL::FPRO_DEBUG_INFO 
 /// @brief INFO, WARNING, and ERROR debug is output
+/// @var FPRODBGLEVEL::FPRO_DEBUG_REGRW 
+/// @brief REGWR, INFO, WARNING, and ERROR debug is output
 /// @var FPRODBGLEVEL::FPRO_DEBUG_DEBUG 
-/// @brief DEBUG, INFO, WARNING, and ERROR debug is output
+/// @brief DEBUG, REGRW, INFO, WARNING, and ERROR debug is output
 /// @var FPRODBGLEVEL::FPRO_DEBUG_TRACE 
-/// @brief TRACE, DEBUG, INFO, WARNING, and ERROR debug is output
+/// @brief TRACE, DEBUG, REGRW, INFO, WARNING, and ERROR debug is output
 typedef enum
 {
 	FPRO_DEBUG_NONE,
 	FPRO_DEBUG_ERROR,
 	FPRO_DEBUG_WARNING,
 	FPRO_DEBUG_INFO,
+	FPRO_DEBUG_REGRW,
 	FPRO_DEBUG_DEBUG,
 	FPRO_DEBUG_TRACE
 } FPRODBGLEVEL;
@@ -889,15 +923,22 @@ typedef struct crop_rect_t
 ///
 /// Version 2 and later of the PCIE Fibre interface allows for the image
 /// merging process to be done in hardware on the host side PCIE Fibre interface card.
-/// This structure is used to transfer the reference frames used in the processing.
+/// This structure is used to transfer the reference frames used in the processing.  See 
+/// #FPROAlgo_SetHardwareMergeReferenceFrames and #FPROAlgo_SetHardwareMergeReferenceFiles for
+/// additional information.
 /// <br>
 /// <br>
 /// The format of the additive frames is a fixed point number with the lower 3 bits
 /// being the decimal.  The 16 bit quantity must be in Little Endian byte order.
 /// <br>
+/// The aditive frames are also referred to as Dark Signal Non-Uniformity (DSNU) frames.
+/// <br>
+/// <br>
 /// The format of the multiply frames is a fixed point number with the lower 10 bits being the
 /// decimal.  For example, a vaue of 1.0 = 0x0400.  These values must also be stored in 
 /// Little Endian byte order.
+/// <br>
+/// The multiplicative frames are also referred to as Photo Response Non-Uniformity (PRNU) frames.
 /// <br>
 /// 
 ///
@@ -925,41 +966,107 @@ typedef struct ref_frames_t
 } FPRO_REFFRAMES;
 
 ///
+/// @typedef FPRO_IMAGE_FORMAT
+/// @brief Output Frame Formats for image merging and conversion
+///
+/// This enum is used by the merging algorithms and conversion functions
+/// to specify the resultant image format of the operation.
+/// @var FPRO_IMAGE_FORMAT::IFORMAT_RCD 
+/// @brief FLI native RCD Frame.
+/// @var FPRO_IMAGE_FORMAT::IFORMAT_TIFF 
+/// @brief TIFF Formatted image.
+/// @var FPRO_IMAGE_FORMAT::IFORMAT_FITS 
+/// @brief FITS formatted image.
+typedef enum
+{
+	IFORMAT_NONE = 0,
+	IFORMAT_RCD = 0,
+	IFORMAT_TIFF,
+	IFORMAT_FITS
+} FPRO_IMAGE_FORMAT;
+
+///
+/// @typedef FPRO_CONV
+/// @brief Conversion info structure supplied to conversion functions.
+///
+/// This enum is used by the conversion functions
+/// to specify the resultant image format of the operation.  It also supplies 
+/// merge reference frames to use in the case a image merge needs to occur.  If these
+/// are not supplied, identity frames are used based on the gain settings in the meta
+/// data of the given rcd file to convert.   See #FPROAlgo_SetHardwareMergeReferenceFiles and
+/// #FPROFrame_ConvertFile for more information.
+/// @var FPRO_CONV::eFormat 
+/// @brief File format for the converted frame.
+/// @var FPRO_CONV::pDSNUFile 
+/// @brief DSNU Reference file (may be NULL).
+/// @var FPRO_CONV::pPRNUFile 
+/// @brief PRNU Reference file (may be NULL).
+typedef struct conv_info_t
+{
+	FPRO_IMAGE_FORMAT eFormat;
+	wchar_t* pDSNUFile;
+	wchar_t* pPRNUFile;
+} FPRO_CONV;
+
+///
+/// @typedef FPRO_HWMERGEFRAMES
+/// @brief Enables for Hardware Image Merging
+///
+/// This enum is used by the hardware merging algorithms and 
+/// specifies which image planes from the camera to merge.  See #FPRO_HWMERGEENABLE.
+/// Normally you would merge both the low and high gain frames to get the
+/// best resultant merged image.  This allows you to obtain either the 
+/// low or high gain images as well.
+/// @var FPRO_HWMERGEFRAMES::HWMERGE_FRAME_BOTH 
+/// @brief Normal merge, both low and high gain planes are corrected and merged.
+/// @var FPRO_HWMERGEFRAMES::HWMERGE_FRAME_LOWONLY 
+/// @brief Only the corrected low gain pixels will be sent through to the API.  The high gain pixels will be ignored.
+/// @var FPRO_HWMERGEENABLE::HWMERGE_FRAME_HIGHONLY 
+/// @brief Only the corrected high gain pixels will be sent through to the API.  The low gain pixels will be ignored.
+typedef enum
+{
+	HWMERGE_FRAME_BOTH = 0,
+	HWMERGE_FRAME_LOWONLY,
+	HWMERGE_FRAME_HIGHONLY,
+
+} FPRO_HWMERGEFRAMES;
+
+
+///
 /// @typedef hw_merge_enables_t FPRO_HWMERGEENABLE
 /// @brief Enables for Hardware Image Merging
 ///
-/// Version 2 and later of the PCIE Fibre interface allows for the image
-/// merging process to be done in hardware on the host side PCIE Fibre interface card.
+/// Version 2 and later of the PCIE Fibre interface card allows for the image
+/// merging process to be done in hardware directly on the card.
 /// This structure is used to enable the different merging options.
 /// See #FPROAlgo_SetHardwareMergeEnables() and #FPRO_REFFRAMES for more information.
 /// <br>
 /// <br>
 /// In addition, the same merge algorithm used on the PCIE card is available in the API for use
-/// on USB connections, Fibre connections with older hardware, and even with version 2 hardware.
+/// on USB connections, Fibre connections with older hardware, and even with version 2 PCIE hardware.
 /// For use in the API, all of the same hardware merge API's are used to set up the reference frames,
-/// thresholds, and enables (as with this structure).  In the API's emulation, the bMergeEnable field in
-/// this structure is ignored.  You tell the API to merge the data through the #FPROFrame_GetVideoFrameUnpacked()
-/// call.  See the structure definition #FPROUNPACKEDIMAGES for more information on unpacking and merging. 
+/// thresholds, and enables (as with this structure).  In the API's emulation, the bMergeEnable and eMergeFrames 
+/// fields in this structure are ignored.  You tell the API to merge or return the desired frames through the #FPROUNPACKEDIMAGES 
+/// structure using the #FPROFrame_GetVideoFrameUnpacked() call.  See the structure definition #FPROUNPACKEDIMAGES 
+/// for more information on unpacking and merging. 
+/// <br>
+/// <br>
 /// If unpacked and unmerged data is desired the #FPROFrame_GetVideoFrame() call is used.
 /// <br>
 /// 
 /// @var FPRO_HWMERGEENABLE::bMergeEnable 
 /// @brief True if merging enabled.  This must be true for the other enables to have any effect.  False turns merging off
 /// and the unprocessed frame data is passed through to the host directly from the camera.
-/// @var FPRO_HWMERGEENABLE::bGenerateTIFF 
-/// @brief Set to true if you want a TIFF formatted image.
-/// @var FPRO_HWMERGEENABLE::bCorrectedLowGainOnly 
-/// @brief Only the corrected low gain pixels will be sent through to the API.  The high gain pixels will be ignored.
-/// This is primarily used for debugging purposes.
-/// @var FPRO_HWMERGEENABLE::bCorrectedHighGainOnly 
-/// @brief Only the corrected high gain pixels will be sent through to the API.  The low gain pixels will be ignored.
-/// This is primarily used for debugging purposes.
+/// @var FPRO_HWMERGEENABLE::eMergeFormat 
+/// @brief The image file format for the merged image.  The Actual PCIE card only supports RCD and TIFF.  When the 
+/// API is used for merging through this mechanism, FITS is also supported.
+/// @var FPRO_HWMERGEENABLE::eMergeFrames 
+/// @brief Specifies the frames to merge.
 typedef struct hw_merge_enables_t
 {
 	bool bMergeEnable;
-	bool bGenerateTIFF;
-	bool bCorrectedLowGainOnly;
-	bool bCorrectedHighGainOnly;
+	FPRO_IMAGE_FORMAT eMergeFormat;
+	FPRO_HWMERGEFRAMES eMergeFrames;
 } FPRO_HWMERGEENABLE;
 
 /// @enum  FPRO_MERGEALGO
@@ -997,28 +1104,37 @@ typedef enum
 /// @var FPROUNPACKEDIMAGES::pMetaData 
 /// @brief The raw Meta Data Buffer.
 /// @var FPROUNPACKEDIMAGES::uiMetaDataSize 
-/// @brief The Size of the pMetaData buffer.
+/// @brief The Size of the pMetaData buffer in bytes.
 /// @var FPROUNPACKEDIMAGES::bMetaDataRequest 
 /// @brief The Meta Data request Flag.  Set to 'true' to unpack meta data.
 ///
 /// @var FPROUNPACKEDIMAGES::pLowImage 
 /// @brief The Low Image Buffer.
 /// @var FPROUNPACKEDIMAGES::uiLowImageSize 
-/// @brief The Size of the pLowImage buffer in pixels.
+/// @brief The Size of the pLowImage image in pixels.
+/// @var FPROUNPACKEDIMAGES::uiLowBufferSize 
+/// @brief The Size of the pLowImage buffer in bytes.  This may be different than 
+///       uiLowImageSize * sizeof(uint16_t) when a merge format other than RCD is chosen. 
 /// @var FPROUNPACKEDIMAGES::bLowImageRequest 
 /// @brief The Low Image request Flag.  Set to 'true' to unpack the low gain image plane.
 ///
 /// @var FPROUNPACKEDIMAGES::pHighImage 
 /// @brief The High Image Buffer.
 /// @var FPROUNPACKEDIMAGES::uiHighImageSize 
-/// @brief The Size of the pHighImage buffer in pixels.
+/// @brief The Size of the pHighImage image in pixels.
+/// @var FPROUNPACKEDIMAGES::uiHighBufferSize 
+/// @brief The Size of the pHighImage buffer in bytes.  This may be different than 
+///       uiHighImageSize * sizeof(uint16_t) when a merge format other than RCD is chosen. 
 /// @var FPROUNPACKEDIMAGES::bHighImageRequest 
 /// @brief The High Image request Flag.  Set to 'true' to unpack the high gain image plane.
 ///
 /// @var FPROUNPACKEDIMAGES::pMergedImage 
 /// @brief The Merged Image Buffer.
 /// @var FPROUNPACKEDIMAGES::uiMergedImageSize 
-/// @brief The Size of the pMergedImage buffer in pixels.
+/// @brief The Size of the pMergedImage image in pixels.
+/// @var FPROUNPACKEDIMAGES::uiMergedBufferSize 
+/// @brief The Size of the pMergedImage buffer in bytes.  This will be different than 
+///       uiMergedImageSize * sizeof(uint16_t) when a merge format other than RCD is chosen. 
 /// @var FPROUNPACKEDIMAGES::bMergedImageRequest 
 /// @brief The Merged Image request Flag.  Set to 'true' to merge the low and high gain image planes.
 /// @var FPROUNPACKEDIMAGES::eMergAlgo 
@@ -1031,14 +1147,17 @@ typedef struct unpacked_images_t
 
 	uint16_t *pLowImage;
 	uint64_t uiLowImageSize;
+	uint64_t uiLowBufferSize;
 	bool     bLowImageRequest;
 
 	uint16_t *pHighImage;
 	uint64_t uiHighImageSize;
+	uint64_t uiHighBufferSize;
 	bool     bHighImageRequest;
 
 	uint16_t *pMergedImage;
 	uint64_t uiMergedImageSize;
+	uint64_t uiMergedBufferSize;
 	bool     bMergedImageRequest;
 
 	FPRO_MERGEALGO eMergAlgo;
@@ -1252,6 +1371,20 @@ LIBFLIPRO_API FPROCam_GetAPIVersion(wchar_t *pVersion, uint32_t uiLength);
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
 LIBFLIPRO_API FPROCam_GetDeviceVersion(int32_t iHandle, FPRODEVICEVERS *pVersion);
 
+//////////////////////////////////////////
+///
+/// @brief Returns the version information from the connected device.
+///
+/// @param iHandle - The handle to an open camera device returned from FPROCam_Open().
+/// @param pFibre - Buffer for the Fibre FPGA serial number on the Host PCIE card.
+/// @param pPcie - Buffer for the PCIE FPGA serial number on the Host PCIE card.
+/// @param uiLength - Length of each of the buffers (they must be the same length).
+///                   Serial numbers are limited to 32 characters by the API.
+///
+/// @return Greater than or equal to 0 on success, less than 0 on failure.
+LIBFLIPRO_API FPROCam_GetHostSerialNumbers(int32_t iHandle, wchar_t *pFibre, wchar_t *pPcie, uint32_t uiLength);
+
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Frame Data Functions
@@ -1264,7 +1397,7 @@ LIBFLIPRO_API FPROCam_GetDeviceVersion(int32_t iHandle, FPRODEVICEVERS *pVersion
 /// The abort function is meant to be called to abort the current image capture.
 /// It can be called from a different thread that is performing the image capture
 /// as long as the recommended calling pattern for image capture is followed.
-/// See FPROFrame_CaptureStart(), FPROFrame_CaptureStop() for a description of
+/// See FPROFrame_CaptureStart() for a description of
 /// the recommended image capture calling pattern.
 ///
 ///	@param iHandle - The handle to an open camera device returned from FPROCam_Open()
@@ -1272,6 +1405,7 @@ LIBFLIPRO_API FPROCam_GetDeviceVersion(int32_t iHandle, FPRODEVICEVERS *pVersion
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
 LIBFLIPRO_API FPROFrame_CaptureAbort(int32_t iHandle);
 
+/// @cond DO_NOT_DOCUMENT
 //////////////////////////////////////////
 ///
 /// @brief Ends the active image capture.
@@ -1281,13 +1415,15 @@ LIBFLIPRO_API FPROFrame_CaptureAbort(int32_t iHandle);
 /// be used to end a long exposure prior to the full exposure completing.  Given that,
 /// it will normally be called from a different thread that is performing the image capture
 /// as long as the recommended calling pattern for image capture is followed.
-/// See FPROFrame_CaptureStart(), FPROFrame_CaptureStop() for a description of
+/// See FPROFrame_CaptureStart(),  for a description of
 /// the recommended image capture calling pattern.
 ///
 ///	@param iHandle - The handle to an open camera device returned from FPROCam_Open()
 ///
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
-LIBFLIPRO_API FPROFrame_CaptureEnd(int32_t iHandle);
+/// DEPRECATED
+//LIBFLIPRO_API FPROFrame_CaptureEnd(int32_t iHandle);
+/// @endcond
 
 //////////////////////////////////////////
 ///
@@ -1335,6 +1471,7 @@ LIBFLIPRO_API FPROFrame_CaptureStart(int32_t iHandle, uint32_t uiFrameCount);
 ///
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
 LIBFLIPRO_API FPROFrame_CaptureStop(int32_t iHandle);
+
 
 //////////////////////////////////////////
 ///
@@ -1551,8 +1688,8 @@ LIBFLIPRO_API FPROFrame_GetThumbnailFrame(int32_t iHandle, uint8_t *pFrameData, 
 /// expected frame size.  If it is too large, the function will try and read the given size and 
 /// may stall the USB connection if no more frame data is available.
 ///
-/// NOTE: In order to ensure data pipe integrity, #FPROFrame_CaptureStart(), 
-///       #FPROFrame_GetVideoFrame(), and #FPROFrame_CaptureStop() must be called
+/// NOTE: In order to ensure data pipe integrity, FPROFrame_CaptureStart(), 
+///       FPROFrame_GetVideoFrame(), and FPROFrame_CaptureStop() must be called
 ///	      from the same thread in a pattern similar to below:
 ///
 /// @code
@@ -1638,15 +1775,15 @@ LIBFLIPRO_API FPROFrame_GetVideoFrameUnpacked(int32_t iHandle, uint8_t *pFrameDa
 ///
 /// This function is intended for use when using external trigger sources for image capture.
 /// Unlike FPROFrame_GetVideoFrame(), no timeout is specified.  It waits forever until notification
-/// of image frame data availability from the camera.  FPROFrame_CaptureAbort() and FPROFrame_CaptureEnd()
+/// of image frame data availability from the camera.  FPROFrame_CaptureAbort()
 /// can be used to cancel the exposure as described in those API calls. 
 /// <br>
 /// <br>
 /// FPROFrame_CaptureStart() is not expected to be called prior to this API because the External Trigger
 /// will be supplying the trigger source.  However, if this call is awaiting image data, another thread may
-/// call FPROFrame_CaptureStart() to force a trigger.  Once exposed, this function will return the data as
+/// call #FPROFrame_CaptureStart() to force a trigger.  Once exposed, this function will return the data as
 /// if an external trigger occurred. If you do call FPROFrame_CaptureStart() to force a trigger, it is important
-/// to call FPROFrame_CaptureStop() after the image is retrieved.
+/// to call #FPROFrame_CaptureAbort() after the image is retrieved.
 /// <br>
 /// <br>
 /// It is important to call this function with the
@@ -1667,19 +1804,75 @@ LIBFLIPRO_API FPROFrame_GetVideoFrameExt(int32_t iHandle, uint8_t *pFrameData, u
 ///
 /// @brief Unpack and merge the given file.
 ///
-/// This function performs the same as the #FPROFrame_GetVideoFrameUnpacked() API
+/// This function performs similarly as the #FPROFrame_GetVideoFrameUnpacked() API
 /// except that it operates on the given file as opposed to the image data directly from the
 /// camera.  As such, no connection to the camera is required for this API.
 /// If you have retrieved a frame with #FPROFrame_GetVideoFrame() or #FPROFrame_GetVideoFrameExt(),
 /// and saved it to a file, you may pass that file to this function to unpack and merge the image
-/// planes.  See #FPROFrame_GetVideoFrameUnpacked() for details on the parameter usage.
-///
+/// planes.  For a description of the pUPBUffers and pStats parameters, see the 
+/// #FPROFrame_GetVideoFrameUnpacked() API function. 
+/// <br>
+/// <br>
+/// The  FPROFrame_UnpackFileEx() API was introduced to accomodate the Reference Frame merging algorithm.
+/// The FPROFrame_UnpackFile() API simply calls FPROFrame_UnpackFileEx with NULL pointers for the reference
+/// file names.  If the FPROMERGE_ALGO_REF_FRAME, algorithm is specified in the pUPBuffers parameter, this 
+/// causes Identity Frames to be used for the merge.  For a description of the pDSNUFile and pPRNUFile
+/// parameters, see #FPROAlgo_SetHardwareMergeReferenceFiles.
+/// <br>
+/// 
 ///	@param pFileName - The file to unpack and merge.
 /// @param pUPBuffers - The unpacked buffers.
 /// @param pStats - The unpacked statistics.
 ///
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
-LIBFLIPRO_API FPROFrame_UnpackFile(wchar_t *pFileName, FPROUNPACKEDIMAGES* pUPBuffers, FPROUNPACKEDSTATS* pStats);
+LIBFLIPRO_API FPROFrame_UnpackFile(wchar_t* pFileName, FPROUNPACKEDIMAGES* pUPBuffers, FPROUNPACKEDSTATS* pStats);
+
+//////////////////////////////////////////
+///
+/// @brief Unpack and merge the given file.
+///
+/// See #FPROFrame_UnpackFile for a complete description.
+/// <br>
+/// One or both of the  pDSNUFile and pPRNUFile parameters may be NULL.  In the case where the 
+/// FPROMERGE_ALGO_REF_FRAME algorithm is specified in the pUPBuffers parameter, an identity reference frame
+/// will be used for the missing (NULL) frame.  For a description of the pDSNUFile and pPRNUFile
+/// parameters, see #FPROAlgo_SetHardwareMergeReferenceFiles.
+/// <br>
+/// 
+///	@param pFileName - The file to unpack and merge.
+/// @param pUPBuffers - The unpacked buffers.
+/// @param pStats - The unpacked statistics.
+/// @param pDSNUFile - DSNU Reference file to use (may be NULL)
+/// @param pPRNUFile - PRNU Reference File to use (may be NULL)
+///
+/// @return Greater than or equal to 0 on success, less than 0 on failure.
+LIBFLIPRO_API FPROFrame_UnpackFileEx(wchar_t* pFileName, FPROUNPACKEDIMAGES* pUPBuffers, FPROUNPACKEDSTATS* pStats, const wchar_t* pDSNUFile, const wchar_t* pPRNUFile);
+
+
+//////////////////////////////////////////
+///
+/// @brief Convert (and possibly) merge the given RCD file.
+///
+/// Convert the given RCD file to the file type specified.  
+/// See #FPROAlgo_SetHardwareMergeReferenceFiles and #FPRO_CONV for
+/// more information.
+/// <br>
+/// <br>
+/// Only RCD files may be supplied as the input file to convert.  If a single plane
+/// file is provided, that plane is unpacked and converted to the output format.  If a 
+/// two plane RCD is provided (both Low Gain and High Gain frames), the frames are
+/// unpacked, merged, and all 3 frames are converted to the specified output format.
+/// 
+///	@param pInRcdFile - The file to convert.
+/// @param pConvInfo - Conversion specifications.
+/// @param pOutFile - Ouput (converted) file name.
+///
+/// @return Greater than or equal to 0 on success, less than 0 on failure.
+LIBFLIPRO_API FPROFrame_ConvertFile(wchar_t* pInRcdFile, FPRO_CONV* pConvInfo, wchar_t *pOutFile);
+/// @cond DO_NOT_DOCUMENT
+/// Not Implemented yet
+LIBFLIPRO_API FPROFrame_ConvertFileEx(wchar_t* pInRcdFile, FPRO_CONV* pConvInfo, FPROUNPACKEDIMAGES* pUPBuffers, FPROUNPACKEDSTATS* pStats);
+///@endcond
 
 //////////////////////////////////////////
 ///
@@ -1926,7 +2119,6 @@ LIBFLIPRO_API FPROFrame_SetUnpackingBiasFrames(int32_t iHandle, uint32_t uiWidth
 LIBFLIPRO_API FPROFrame_SetUnpackingFlatFieldFrames(int32_t iHandle, uint32_t uiWidth, uint32_t uiHeight, uint16_t *pLowFrame, uint16_t *pHighFrame);
 
 
-#if defined(_WIN32) || defined(_WINDOWS)
 //////////////////////////////////////////
 ///
 /// @brief Initializes the Streamer interfaces.
@@ -2055,7 +2247,6 @@ LIBFLIPRO_API FPROFrame_StreamGetPreviewImage(int32_t iHandle, uint8_t* pImage, 
 ///         returns success (0), and sets the *pLength parameter to 0.
 LIBFLIPRO_API FPROFrame_StreamGetPreviewImageEx(int32_t iHandle, uint8_t* pImage, uint32_t* pLength, FPROPREVIEW *pInfo, uint32_t uiTimeoutMSecs);
 
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////
@@ -2172,11 +2363,11 @@ LIBFLIPRO_API FPROCtrl_GetExposure(int32_t iHandle, uint64_t *pExposureTime, uin
 /// @brief Returns the external trigger settings of the camera.
 ///
 ///	@param iHandle - The handle to an open camera device returned from FPROCam_Open()
-/// @param pEnable - true: External trigger enabled, false: External trigger disabled
-/// @param pTrigType - The behavior of the external trigger signal.  See #FPROEXTTRIGTYPE.
+/// @param pTrigInfo - External Trigger setup information.  See #FPROEXTTRIGINFO and #FPROEXTTRIGTYPE.
 ///
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
-LIBFLIPRO_API FPROCtrl_GetExternalTriggerEnable(int32_t iHandle, bool *pEnable, FPROEXTTRIGTYPE *pTrigType);
+LIBFLIPRO_API FPROCtrl_GetExternalTriggerEnable(int32_t iHandle, FPROEXTTRIGINFO* pTrigInfo);
+
 
 //////////////////////////////////////////
 ///
@@ -2506,11 +2697,11 @@ LIBFLIPRO_API FPROCtrl_SetExposureEx(int32_t iHandle, uint64_t uiExposureTime, u
 /// @brief Enables or disables the external trigger of the camera.
 ///
 ///	@param iHandle - The handle to an open camera device returned from FPROCam_Open()
-/// @param bEnable - true: enables the external trigger, false: disable the external trigger
-/// @param eTrigType - Sets the behavior of the external trigger signal.  See #FPROEXTTRIGTYPE.
+/// @param uiFrameCount - The number of images to get (dependent on pTrigInfo setup).
+/// @param pTrigInfo - External Trigger setup information.  See #FPROEXTTRIGINFO and #FPROEXTTRIGTYPE.
 ///
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
-LIBFLIPRO_API FPROCtrl_SetExternalTriggerEnable(int32_t iHandle, bool bEnable, FPROEXTTRIGTYPE eTrigType);
+LIBFLIPRO_API FPROCtrl_SetExternalTriggerEnable(int32_t iHandle, uint32_t uiFrameCount, FPROEXTTRIGINFO *pTrigInfo);
 
 //////////////////////////////////////////
 ///
@@ -3150,6 +3341,21 @@ LIBFLIPRO_API FPROAuxIO_GetPin(int32_t iHandle, FPROAUXIO eAuxIO, FPROAUXIO_DIR 
 
 //////////////////////////////////////////
 ///
+/// @brief Get the Exposure Active Signal Polarity.
+///
+/// This function gets the Exposure Active Signal polarity for the 
+/// Exposure Type Auxiliary output pin. See #FPROAuxIO_SetExposureActiveType for
+/// additional information.
+/// Consult your documentation for signal timing details.
+///
+///	@param iHandle - The handle to an open camera device returned from FPROCam_Open()
+/// @param eType - Exposure Active Polarity: true= Active High, false= Active Low.
+///
+/// @return Greater than or equal to 0 on success, less than 0 on failure.
+LIBFLIPRO_API FPROAuxIO_GetExposureActivePolarity(int32_t iHandle, bool *pActiveHigh);
+
+//////////////////////////////////////////
+///
 /// @brief Get Exposure Active Type Signal.
 ///
 /// This function gets the Exposure Type Signal for the Exposure Type Auxiliary 
@@ -3178,6 +3384,21 @@ LIBFLIPRO_API FPROAuxIO_SetPin(int32_t iHandle, FPROAUXIO eAuxIO, FPROAUXIO_DIR 
 
 //////////////////////////////////////////
 ///
+/// @brief Exposure Active Signal Polarity.
+///
+/// This function sets the Exposure Active Signal polarity for the 
+/// Exposure Type Auxiliary output pin. See #FPROAuxIO_SetExposureActiveType for
+/// additional information.
+/// Consult your documentation for signal timing details.
+///
+///	@param iHandle - The handle to an open camera device returned from FPROCam_Open()
+/// @param eType - Exposure Active Polarity: true= Active High, false= Active Low.
+///
+/// @return Greater than or equal to 0 on success, less than 0 on failure.
+LIBFLIPRO_API FPROAuxIO_SetExposureActivePolarity(int32_t iHandle, bool bActiveHigh);
+
+//////////////////////////////////////////
+///
 /// @brief Exposure Active Type Signal.
 ///
 /// This function sets the Exposure Type Signal for the Exposure Type Auxiliary 
@@ -3188,6 +3409,7 @@ LIBFLIPRO_API FPROAuxIO_SetPin(int32_t iHandle, FPROAUXIO eAuxIO, FPROAUXIO_DIR 
 ///
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
 LIBFLIPRO_API FPROAuxIO_SetExposureActiveType(int32_t iHandle, FPROAUXIO_EXPACTIVETYPE eType);
+
 
 //////////////////////////////////////////
 // Frame Acknowledgment Mode Support Functions
@@ -3341,9 +3563,11 @@ LIBFLIPRO_API FPROAlgo_StackNextFrame(int32_t iHandle, uint8_t* pFrameData, uint
 /// @param ppLowMeanFrame - Buffer pointer for Low Mean Frame.
 /// @param ppHighMeanFrame - Buffer pointer for High Mean Frame.
 /// @param pNumPixels - Buffer to return the number of pixels in each frame.
+/// @param ppMetaData - Buffer pointer for returned meta data (may be NULL).
+/// @param puiMetaSize - Pointer for returned size of meta data (may be NULL).
 ///
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
-LIBFLIPRO_API FPROAlgo_StackFinish(int32_t iHandle, uint16_t **ppLowMeanFrame, uint16_t **ppHighMeanFrame, uint32_t* pNumPixels);
+LIBFLIPRO_API FPROAlgo_StackFinish(int32_t iHandle, uint16_t **ppLowMeanFrame, uint16_t **ppHighMeanFrame, uint32_t* pNumPixels, uint8_t** ppMetaData, uint32_t* puiMetaSize);
 
 //////////////////////////////////////////
 ///
@@ -3366,12 +3590,43 @@ LIBFLIPRO_API FPROAlgo_StackDeinitialize(int32_t iHandle);
 ///
 /// See #FPRO_REFFRAMES for a description on how to use this function.
 /// <br>
+/// <br>
+/// The examples code also provides guidance for building this structure from 
+/// your reference images.  See the StreamingAndHWMerge example for further information.
+/// <br>
 ///
 ///	@param iHandle - The handle to an open camera device returned from FPROCam_Open()
 /// @param pRefFrames - Pointer to the reference frames to use.
 ///
 /// @return Greater than or equal to 0 on success, less than 0 on failure.
-LIBFLIPRO_API FPROAlgo_SetHardwareMergeReferenceFrames(int32_t iHandle, FPRO_REFFRAMES *pRefFrames);
+LIBFLIPRO_API FPROAlgo_SetHardwareMergeReferenceFrames(int32_t iHandle, FPRO_REFFRAMES* pRefFrames);
+
+//////////////////////////////////////////
+///
+/// @brief Sets the reference frames used in PCIE Fibre hardware image merging.
+///
+/// This function is analogous to the #FPROAlgo_SetHardwareMergeReferenceFrames API.
+/// It expects RCD Files as generated by the FLI Pilot application rather than the raw 
+/// reference frame data.  It builds the FPRO_REFFRAMES structure from the file data and
+/// sets the reference frames as if #FPROAlgo_SetHardwareMergeReferenceFrames was called.
+/// You need only call this API or #FPROAlgo_SetHardwareMergeReferenceFrames, you do not need
+/// to call both.  This API is provided as a built in convenience when using the FLI Pilot 
+/// application to generate the reference data files.  
+/// <br>
+/// <br>
+/// At least one of the parameters must point to a valid file name; the other file name may be NULL.
+/// Passing a NULL pointer for a file name will generate identity reference data for the frame: Zeros (0) 
+/// for the DSNU frames and ones (1) for the PRNU frames.
+/// <br>
+/// <br>
+/// See #FPRO_REFFRAMES for further information.
+///
+///	@param iHandle - The handle to an open camera device returned from FPROCam_Open()
+/// @param pDSNUFile - Pointer to the DSNU File.
+/// @param pPRNUFile - Pointer to the PRNU File.
+///
+/// @return Greater than or equal to 0 on success, less than 0 on failure.
+LIBFLIPRO_API FPROAlgo_SetHardwareMergeReferenceFiles(int32_t iHandle, const wchar_t *pDSNUFile, const wchar_t *pPRNUFile);
 
 //////////////////////////////////////////
 ///
@@ -3435,6 +3690,10 @@ LIBFLIPRO_API FPROAlgo_GetHardwareMergeEnables(int32_t iHandle, FPRO_HWMERGEENAB
 LIBFLIPRO_API FPROAlgo_SetHardwareMergeEnables(int32_t iHandle, FPRO_HWMERGEENABLE mergeEnables);
 
 
+///  @cond DO_NOT_DOCUMRNT
+LIBFLIPRO_API FPROAlgo_MergeRcdToFits(wchar_t *pRCDFileName, wchar_t *pDSNURef, wchar_t *pPRNURef);
+/// @endcond
+
 //////////////////////////////////////////
 // NV Storage Functions
 //////////////////////////////////////////
@@ -3488,6 +3747,10 @@ LIBFLIPRO_API FPROCmd_SendRecvRaw(int32_t iHandle, uint8_t *pTxData, uint32_t ui
 LIBFLIPRO_API FPROCmd_ReadReg(int32_t iHandle, uint32_t uiReg, uint32_t *pValue);
 /// @private
 LIBFLIPRO_API FPROCmd_WriteReg(int32_t iHandle, uint32_t uiReg, uint32_t uiValue, uint32_t uiMask);
+/// @private
+LIBFLIPRO_API FPROCmd_PCIEReadReg(int32_t iHandle, uint32_t uiReg, uint32_t* pValue);
+/// @private
+LIBFLIPRO_API FPROCmd_PCIEWriteReg(int32_t iHandle, uint32_t uiReg, uint32_t uiValue);
 
 // Debug Functions
 /// @cond DO_NOT_DOCUMENT
