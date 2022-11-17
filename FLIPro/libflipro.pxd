@@ -1,4 +1,6 @@
 from libc.stdint cimport uint32_t, uint64_t, int16_t, uint16_t, uint8_t, int32_t
+from libc.stddef cimport wchar_t
+from libcpp cimport bool
 
 cdef extern from "libflipro.h":
 
