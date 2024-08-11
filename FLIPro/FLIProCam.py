@@ -9,15 +9,15 @@ LastEditTime: 2021-01-19 23:51:06
 from .pyflipro import *
 
 
-# class Camera():
-#     def __init__(self, name):
-#         model, self.interface, num = name.split('.')
-#         if model != 'FLI':
-#             raise NameError(f"Not support model {model}")
-#         self.camname = FLIList(self.interface, 'camera')[int(num)][0]
-#         self.cooler = False
-#         self.exptime = 0
-#         self.setemp = 20
+class Camera():
+    def __init__(self, name):
+        self.interface, num = name.split('.')
+        cams, camcount = GetCameraList()
+        self.camname = cams[num]
+
+        # self.cooler = False
+        # self.exptime = 0
+        # self.setemp = 20
 
 #     def __del__(self):
 #         if self.Connected is True:
