@@ -3,7 +3,7 @@
 @Author: F.O.X
 @Date: 2020-03-08 00:01:00
 @LastEditor: F.O.X
-LastEditTime: 2022-09-10 02:44:40
+LastEditTime: 2024-08-11 10:22:15
 '''
 
 from .pyfli import *
@@ -153,7 +153,6 @@ class Camera():
     def StartExposure(self, exp, light):
         setExposureTime(self.cam, exp * 1000)
         self.exptime = exp * 1000
-        setCameraMode(self.cam, 0)
         if light:
             setFrameType(self.cam, 'normal')
         else:
@@ -283,10 +282,6 @@ class Camera():
     @property
     def PixelSizeY(self):
         return self.psy
-
-    @property
-    def ReadoutMode(self):
-        return
 
     @property
     def ReadoutModes(self):
